@@ -28,7 +28,7 @@ export default function NewsDetailPage() {
     }
   }, [params.code]);
 
-  const fetchNewsDetail = async (newsCode) => {
+  const fetchNewsDetail = async (newsCode: string) => {
     try {
       setLoading(true);
       const response = await fetch(`/api/news?code=${newsCode}`);
@@ -46,7 +46,7 @@ export default function NewsDetailPage() {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fa-IR', {
       year: 'numeric',
       month: 'long',
