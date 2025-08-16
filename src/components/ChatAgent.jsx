@@ -229,24 +229,27 @@ export default function ChatAgent({ isEmbedded = false }) {
 
       {/* Input Area */}
       <div className="border-t border-gray-200 p-4 bg-white rounded-b-xl">
+        {/* Textarea - Full width on mobile */}
+        <div className="mb-3 md:mb-0">
+          <textarea
+            ref={inputRef}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="سوال خود را درباره زینوا بپرسید..."
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-sm text-gray-800"
+            rows={3}
+            style={{ minHeight: '80px', maxHeight: '120px' }}
+            disabled={isLoading}
+          />
+        </div>
+        
+        {/* Send Button - Full width on mobile, normal on desktop */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-6">
-          <div className="flex-1">
-            <textarea
-              ref={inputRef}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="سوال خود را درباره زینوا بپرسید..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-sm text-gray-800"
-              rows={2}
-              style={{ minHeight: '60px', maxHeight: '120px' }}
-              disabled={isLoading}
-            />
-          </div>
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center h-[60px] md:h-[44px] w-full md:w-auto ${
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center h-[50px] md:h-[44px] w-full md:w-auto ${
               !inputMessage.trim() || isLoading
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gray-900 text-white hover:bg-gray-800 shadow-lg hover:shadow-xl'
