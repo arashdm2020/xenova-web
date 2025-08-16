@@ -4,21 +4,21 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-// تعریف نوع داده‌ها برای JavaScript
-const NewsDetail = {
-  id: 0,
-  news_code: '',
-  title: '',
-  content: '',
-  summary: '',
-  author: '',
-  published_at: '',
-  image_url: ''
-};
+// تعریف interface برای نوع داده‌های خبر
+interface NewsDetail {
+  id: number;
+  news_code: string;
+  title: string;
+  content: string;
+  summary: string;
+  author: string;
+  published_at: string;
+  image_url?: string;
+}
 
 export default function NewsDetailPage() {
   const params = useParams();
-  const [news, setNews] = useState(null);
+  const [news, setNews] = useState<NewsDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
