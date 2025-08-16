@@ -3,61 +3,63 @@ const fs = require('fs').promises;
 const path = require('path');
 const Database = require('better-sqlite3');
 
-// تنظیمات ربات
 const BOT_TOKEN = '8329442223:AAEnpJuaX4v2jntzQ_9q5Gt6S1Et6B5mxjY';
 const ADMIN_CHANNEL = '@xenova_admin';
-const ADMIN_IDS = [6030020493]; // ادمین‌های ربات
+const ADMIN_IDS = [6030020493];
 
-// ایجاد نمونه ربات
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
-// مسیر فایل‌ها
-const XENOVA_JSON_PATH = path.join(process.cwd(), 'doc', 'xenova.json');
-const DB_PATH = path.join(process.cwd(), 'xenova.db');
-
-// وضعیت‌های کاربران
+// متغیرهای حالت کاربران
 const userStates = new Map();
 
-// کلیدهای دسترسی ادمین
-const adminCommands = {
-  '/start': 'شروع ربات',
-  '/stats': 'آمار بازدید روزانه',
-  '/requests': 'درخواست‌های جدید',
-  '/edit_request': 'ویرایش وضعیت درخواست',
-  '/edit_content': 'ویرایش محتوای xenova.json',
-  '/add_news': 'اضافه کردن خبر جدید',
-  '/add_team': 'اضافه کردن عضو تیم',
-  '/backup': 'پشتیبان‌گیری از دیتابیس',
-  '/help': 'راهنمای دستورات'
-};
-
-// تابع ارسال پیام به کانال ادمین
-async function sendToAdminChannel(message, options = {}) {
-  try {
-    await bot.sendMessage(ADMIN_CHANNEL, message, {
-      parse_mode: 'HTML',
-      ...options
-    });
-  } catch (error) {
-    console.error('خطا در ارسال پیام به کانال:', error);
-  }
+// ایجاد دکمه‌های اصلی
+function getMainKeyboard() {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '📊 آمار روزانه', callback_data: 'stats' },
+          { text: '📋 درخواست‌های جدید', callback_data: 'new_requests' }
+        ],
+        [
+          { text: '📝 تمام درخواست‌ها', callback_data: 'all_requests' },
+          { text: '✏️ ویرایش وضعیت', callback_data: 'edit_status' }
+        ],
+        [
+          { text: '📰 مدیریت اخبار', callback_data: 'manage_news' },
+          { text: '👥 مدیریت تیم', callback_data: 'manage_team' }
+        ],
+        [
+          { text: '⚙️ تنظیمات xenova.json', callback_data: 'edit_content' },
+          { text: '💾 پشتیبان‌گیری', callback_data: 'backup' }
+        ],
+        [
+          { text: '❓ راهنما', callback_data: 'help' }
+        ]
+      ]
+    }
+  };
 }
 
-// تابع خواندن فایل xenova.json
-async function readXenovaData() {
-  try {
-    const data = await fs.readFile(XENOVA_JSON_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('خطا در خواندن xenova.json:', error);
-    return null;
-  }
+// تبدیل وضعیت به متن فارسی
+function getStatusText(status) {
+  const statusMap = {
+    'new': '🆕 جدید',
+    'pending': '⏳ در انتظار',
+    'contacted': '📞 تماس گرفته شده',
+    'reviewing': '🔍 در حال بررسی',
+    'approved': '✅ تایید شده',
+    'completed': '✅ تکمیل شده',
+    'rejected': '❌ رد شده'
+  };
+  return statusMap[status] || status;
 }
 
-// تابع ذخیره فایل xenova.json
+// ذخیره فایل xenova.json
 async function saveXenovaData(data) {
   try {
-    await fs.writeFile(XENOVA_JSON_PATH, JSON.stringify(data, null, 2), 'utf8');
+    const filePath = path.join(process.cwd(), 'doc', 'xenova.json');
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
     return true;
   } catch (error) {
     console.error('خطا در ذخیره xenova.json:', error);
@@ -65,562 +67,740 @@ async function saveXenovaData(data) {
   }
 }
 
-// تابع دریافت آمار بازدید روزانه
-function getDailyStats() {
+// دریافت آمار روزانه
+async function getDailyStats() {
   try {
-    const db = new Database(DB_PATH);
+    const dbPath = path.join(process.cwd(), 'xenova.db');
+    const db = new Database(dbPath);
+    
     const today = new Date().toISOString().split('T')[0];
     
-    const stats = db.prepare(`
-      SELECT 
-        COUNT(*) as total_visits,
-        COUNT(DISTINCT ip_address) as unique_visitors,
-        COUNT(CASE WHEN page_type = 'contact' THEN 1 END) as contact_visits,
-        COUNT(CASE WHEN page_type = 'investment' THEN 1 END) as investment_visits
-      FROM page_visits 
+    const contactCount = db.prepare(`
+      SELECT COUNT(*) as count FROM contact_submissions 
+      WHERE DATE(created_at) = ?
+    `).get(today);
+    
+    const investmentCount = db.prepare(`
+      SELECT COUNT(*) as count FROM investment_requests 
+      WHERE DATE(created_at) = ?
+    `).get(today);
+    
+    const visitCount = db.prepare(`
+      SELECT COUNT(*) as count FROM page_visits 
       WHERE DATE(visited_at) = ?
     `).get(today);
     
+    const totalContacts = db.prepare(`
+      SELECT COUNT(*) as count FROM contact_submissions
+    `).get();
+    
+    const totalInvestments = db.prepare(`
+      SELECT COUNT(*) as count FROM investment_requests
+    `).get();
+    
     db.close();
-    return stats;
+    
+    return {
+      today: {
+        contacts: contactCount.count,
+        investments: investmentCount.count,
+        visits: visitCount.count
+      },
+      total: {
+        contacts: totalContacts.count,
+        investments: totalInvestments.count
+      }
+    };
   } catch (error) {
     console.error('خطا در دریافت آمار:', error);
     return null;
   }
 }
 
-// تابع دریافت درخواست‌های جدید
-function getNewRequests() {
+// دریافت درخواست‌های جدید
+async function getNewRequests() {
   try {
-    const db = new Database(DB_PATH);
-    const requests = db.prepare(`
+    const dbPath = path.join(process.cwd(), 'xenova.db');
+    const db = new Database(dbPath);
+    
+    const contacts = db.prepare(`
       SELECT * FROM contact_submissions 
       WHERE status = 'new' 
       ORDER BY created_at DESC 
       LIMIT 10
     `).all();
     
+    const investments = db.prepare(`
+      SELECT * FROM investment_requests 
+      WHERE status = 'pending' 
+      ORDER BY created_at DESC 
+      LIMIT 10
+    `).all();
+    
     db.close();
-    return requests;
+    
+    return { contacts, investments };
   } catch (error) {
     console.error('خطا در دریافت درخواست‌ها:', error);
-    return [];
+    return { contacts: [], investments: [] };
   }
 }
 
-// تابع ویرایش وضعیت درخواست
-function updateRequestStatus(requestId, status) {
+// دریافت تمام درخواست‌ها
+async function getAllRequests() {
   try {
-    const db = new Database(DB_PATH);
-    const result = db.prepare(`
-      UPDATE contact_submissions 
-      SET status = ?, updated_at = DATETIME('now') 
-      WHERE id = ?
-    `).run(status, requestId);
+    const dbPath = path.join(process.cwd(), 'xenova.db');
+    const db = new Database(dbPath);
+    
+    const contacts = db.prepare(`
+      SELECT * FROM contact_submissions 
+      ORDER BY created_at DESC 
+      LIMIT 50
+    `).all();
+    
+    const investments = db.prepare(`
+      SELECT * FROM investment_requests 
+      ORDER BY created_at DESC 
+      LIMIT 50
+    `).all();
     
     db.close();
+    
+    return { contacts, investments };
+  } catch (error) {
+    console.error('خطا در دریافت درخواست‌ها:', error);
+    return { contacts: [], investments: [] };
+  }
+}
+
+// به‌روزرسانی وضعیت درخواست
+async function updateRequestStatus(type, id, status) {
+  try {
+    const dbPath = path.join(process.cwd(), 'xenova.db');
+    const db = new Database(dbPath);
+    
+    const table = type === 'contact' ? 'contact_submissions' : 'investment_requests';
+    
+    const result = db.prepare(`
+      UPDATE ${table} 
+      SET status = ? 
+      WHERE id = ?
+    `).run(status, id);
+    
+    db.close();
+    
     return result.changes > 0;
   } catch (error) {
-    console.error('خطا در ویرایش وضعیت:', error);
+    console.error('خطا در به‌روزرسانی وضعیت:', error);
     return false;
   }
 }
 
-// تابع اضافه کردن خبر جدید
-async function addNews(newsData) {
+// ایجاد دکمه‌های اصلی
+function getMainKeyboard() {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '📊 آمار روزانه', callback_data: 'stats' },
+          { text: '📋 درخواست‌های جدید', callback_data: 'new_requests' }
+        ],
+        [
+          { text: '📝 تمام درخواست‌ها', callback_data: 'all_requests' },
+          { text: '✏️ ویرایش وضعیت', callback_data: 'edit_status' }
+        ],
+        [
+          { text: '📰 مدیریت اخبار', callback_data: 'manage_news' },
+          { text: '👥 مدیریت تیم', callback_data: 'manage_team' }
+        ],
+        [
+          { text: '⚙️ تنظیمات xenova.json', callback_data: 'edit_content' },
+          { text: '💾 پشتیبان‌گیری', callback_data: 'backup' }
+        ],
+        [
+          { text: '❓ راهنما', callback_data: 'help' }
+        ]
+      ]
+    }
+  };
+}
+
+// ایجاد دکمه‌های مدیریت درخواست‌ها
+function getRequestsKeyboard(requests, type) {
+  const buttons = [];
+  
+  requests.forEach((req, index) => {
+    const status = req.status === 'new' || req.status === 'pending' ? '⏳' : '✅';
+    const name = req.full_name.substring(0, 20);
+    buttons.push([{
+      text: `${status} ${name} (${req.id})`,
+      callback_data: `view_${type}_${req.id}`
+    }]);
+  });
+  
+  buttons.push([
+    { text: '🔙 بازگشت', callback_data: 'main_menu' }
+  ]);
+  
+  return {
+    reply_markup: {
+      inline_keyboard: buttons
+    }
+  };
+}
+
+// ایجاد دکمه‌های وضعیت
+function getStatusKeyboard(type, id) {
+  const statuses = type === 'contact' ? 
+    ['new', 'contacted', 'completed', 'rejected'] : 
+    ['pending', 'reviewing', 'approved', 'rejected'];
+  
+  const buttons = statuses.map(status => [{
+    text: getStatusText(status),
+    callback_data: `set_status_${type}_${id}_${status}`
+  }]);
+  
+  buttons.push([
+    { text: '🔙 بازگشت', callback_data: 'all_requests' }
+  ]);
+  
+  return {
+    reply_markup: {
+      inline_keyboard: buttons
+    }
+  };
+}
+
+// تبدیل وضعیت به متن فارسی
+function getStatusText(status) {
+  const statusMap = {
+    'new': '🆕 جدید',
+    'pending': '⏳ در انتظار',
+    'contacted': '📞 تماس گرفته شده',
+    'reviewing': '🔍 در حال بررسی',
+    'approved': '✅ تایید شده',
+    'completed': '✅ تکمیل شده',
+    'rejected': '❌ رد شده'
+  };
+  return statusMap[status] || status;
+}
+
+// دستور /start
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+  
+  if (!ADMIN_IDS.includes(chatId)) {
+    return bot.sendMessage(chatId, '❌ شما مجاز به استفاده از این ربات نیستید.');
+  }
+  
+  const welcomeMessage = `
+🤖 ربات مدیریت زینوا
+
+سلام! به ربات مدیریت سایت زینوا خوش آمدید.
+
+📋 امکانات موجود:
+• 📊 مشاهده آمار بازدید و درخواست‌ها
+• 📝 مدیریت درخواست‌های تماس و سرمایه‌گذاری
+• ✏️ ویرایش وضعیت درخواست‌ها
+• 📰 مدیریت اخبار و محتوا
+• 👥 مدیریت اعضای تیم
+• ⚙️ تنظیمات xenova.json
+• 💾 پشتیبان‌گیری
+
+برای شروع، یکی از گزینه‌های زیر را انتخاب کنید:
+  `;
+  
+  bot.sendMessage(chatId, welcomeMessage, getMainKeyboard());
+});
+
+// پردازش callback queries
+bot.on('callback_query', async (query) => {
+  const chatId = query.message.chat.id;
+  const data = query.data;
+  
+  if (!ADMIN_IDS.includes(chatId)) {
+    return bot.answerCallbackQuery(query.id, { text: '❌ شما مجاز نیستید.' });
+  }
+  
   try {
-    const xenovaData = await readXenovaData();
-    if (!xenovaData || !xenovaData.news) return false;
-    
-    const newNews = {
-      id: Date.now(),
-      news_code: `news_${Date.now()}`,
-      title: newsData.title,
-      content: newsData.content,
-      summary: newsData.summary,
-      author: newsData.author,
-      published_at: new Date().toISOString(),
-      image_url: newsData.image_url || ''
-    };
-    
-    xenovaData.news.unshift(newNews);
-    return await saveXenovaData(xenovaData);
+    switch (data) {
+      case 'stats':
+        await handleStats(chatId, query.id);
+        break;
+      case 'new_requests':
+        await handleNewRequests(chatId, query.id);
+        break;
+      case 'all_requests':
+        await handleAllRequests(chatId, query.id);
+        break;
+      case 'edit_status':
+        await handleEditStatus(chatId, query.id);
+        break;
+      case 'manage_news':
+        await handleManageNews(chatId, query.id);
+        break;
+      case 'manage_team':
+        await handleManageTeam(chatId, query.id);
+        break;
+      case 'edit_content':
+        await handleEditContent(chatId, query.id);
+        break;
+      case 'backup':
+        await handleBackup(chatId, query.id);
+        break;
+      case 'help':
+        await handleHelp(chatId, query.id);
+        break;
+      case 'main_menu':
+        await handleMainMenu(chatId, query.id);
+        break;
+      default:
+        if (data.startsWith('view_')) {
+          await handleViewRequest(chatId, query.id, data);
+        } else if (data.startsWith('set_status_')) {
+          await handleSetStatus(chatId, query.id, data);
+        } else {
+          bot.answerCallbackQuery(query.id, { text: '❌ دستور نامعتبر' });
+        }
+    }
   } catch (error) {
-    console.error('خطا در اضافه کردن خبر:', error);
-    return false;
+    console.error('خطا در پردازش callback:', error);
+    bot.answerCallbackQuery(query.id, { text: '❌ خطا در پردازش درخواست' });
   }
+});
+
+// مدیریت آمار
+async function handleStats(chatId, queryId) {
+  const stats = await getDailyStats();
+  
+  if (!stats) {
+    bot.answerCallbackQuery(queryId, { text: '❌ خطا در دریافت آمار' });
+    return;
+  }
+  
+  const message = `
+📊 آمار روزانه زینوا
+
+📅 امروز:
+• 📞 درخواست‌های تماس: ${stats.today.contacts}
+• 💰 درخواست‌های سرمایه‌گذاری: ${stats.today.investments}
+• 👁️ بازدیدها: ${stats.today.visits}
+
+📈 کل:
+• 📞 کل درخواست‌های تماس: ${stats.total.contacts}
+• 💰 کل درخواست‌های سرمایه‌گذاری: ${stats.total.investments}
+  `;
+  
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: getMainKeyboard().reply_markup
+  });
 }
 
-// تابع اضافه کردن عضو تیم
-async function addTeamMember(memberData) {
+// مدیریت درخواست‌های جدید
+async function handleNewRequests(chatId, queryId) {
+  const requests = await getNewRequests();
+  
+  if (requests.contacts.length === 0 && requests.investments.length === 0) {
+    bot.answerCallbackQuery(queryId, { text: '✅ هیچ درخواست جدیدی وجود ندارد' });
+    return;
+  }
+  
+  let message = '📋 درخواست‌های جدید:\n\n';
+  
+  if (requests.contacts.length > 0) {
+    message += '📞 درخواست‌های تماس:\n';
+    requests.contacts.forEach(req => {
+      message += `• ${req.full_name} (${req.id}) - ${req.created_at}\n`;
+    });
+    message += '\n';
+  }
+  
+  if (requests.investments.length > 0) {
+    message += '💰 درخواست‌های سرمایه‌گذاری:\n';
+    requests.investments.forEach(req => {
+      message += `• ${req.full_name} (${req.id}) - ${req.created_at}\n`;
+    });
+  }
+  
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '📝 مشاهده تمام درخواست‌ها', callback_data: 'all_requests' },
+          { text: '✏️ ویرایش وضعیت', callback_data: 'edit_status' }
+        ],
+        [
+          { text: '🔙 بازگشت', callback_data: 'main_menu' }
+        ]
+      ]
+    }
+  };
+  
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: keyboard.reply_markup
+  });
+}
+
+// مدیریت تمام درخواست‌ها
+async function handleAllRequests(chatId, queryId) {
+  const requests = await getAllRequests();
+  
+  if (requests.contacts.length === 0 && requests.investments.length === 0) {
+    bot.answerCallbackQuery(queryId, { text: '✅ هیچ درخواستی وجود ندارد' });
+    return;
+  }
+  
+  let message = '📝 تمام درخواست‌ها:\n\n';
+  
+  if (requests.contacts.length > 0) {
+    message += `📞 درخواست‌های تماس (${requests.contacts.length}):\n`;
+    requests.contacts.slice(0, 10).forEach(req => {
+      const status = getStatusText(req.status);
+      message += `• ${req.full_name} (${req.id}) - ${status}\n`;
+    });
+    if (requests.contacts.length > 10) {
+      message += `... و ${requests.contacts.length - 10} مورد دیگر\n`;
+    }
+    message += '\n';
+  }
+  
+  if (requests.investments.length > 0) {
+    message += `💰 درخواست‌های سرمایه‌گذاری (${requests.investments.length}):\n`;
+    requests.investments.slice(0, 10).forEach(req => {
+      const status = getStatusText(req.status);
+      message += `• ${req.full_name} (${req.id}) - ${status}\n`;
+    });
+    if (requests.investments.length > 10) {
+      message += `... و ${requests.investments.length - 10} مورد دیگر\n`;
+    }
+  }
+  
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '📞 درخواست‌های تماس', callback_data: 'view_contacts' },
+          { text: '💰 درخواست‌های سرمایه‌گذاری', callback_data: 'view_investments' }
+        ],
+        [
+          { text: '🔙 بازگشت', callback_data: 'main_menu' }
+        ]
+      ]
+    }
+  };
+  
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: keyboard.reply_markup
+  });
+}
+
+// مشاهده جزئیات درخواست
+async function handleViewRequest(chatId, queryId, data) {
+  const [, type, id] = data.split('_');
+  
   try {
-    const xenovaData = await readXenovaData();
-    if (!xenovaData || !xenovaData.development_team) return false;
+    const dbPath = path.join(process.cwd(), 'xenova.db');
+    const db = new Database(dbPath);
     
-    const newMember = {
-      name: memberData.name,
-      role: memberData.role,
-      photo: memberData.photo || '',
-      skills: memberData.skills || [],
-      experience: memberData.experience || ''
-    };
+    const table = type === 'contact' ? 'contact_submissions' : 'investment_requests';
+    const request = db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(id);
     
-    xenovaData.development_team.advisors.push(newMember);
-    xenovaData.development_team.total_advisors = xenovaData.development_team.advisors.length;
+    db.close();
     
-    return await saveXenovaData(xenovaData);
+    if (!request) {
+      bot.answerCallbackQuery(queryId, { text: '❌ درخواست یافت نشد' });
+      return;
+    }
+    
+    const message = `
+📋 جزئیات درخواست ${type === 'contact' ? 'تماس' : 'سرمایه‌گذاری'}
+
+🆔 شناسه: ${request.id}
+👤 نام: ${request.full_name}
+📧 ایمیل: ${request.email}
+🏢 موقعیت: ${request.company_position || 'نامشخص'}
+📱 تلفن: ${request.mobile_phone || 'نامشخص'}
+💬 پیام: ${request.message || 'نامشخص'}
+📅 تاریخ: ${request.created_at}
+📊 وضعیت: ${getStatusText(request.status)}
+
+${type === 'investment' ? `
+💰 نوع سرمایه‌گذاری: ${request.investment_type || 'نامشخص'}
+💵 مبلغ: ${request.investment_amount_range || 'نامشخص'}
+` : ''}
+    `;
+    
+    const keyboard = getStatusKeyboard(type, id);
+    
+    bot.editMessageText(message, {
+      chat_id: chatId,
+      message_id: queryId,
+      reply_markup: keyboard.reply_markup
+    });
+    
   } catch (error) {
-    console.error('خطا در اضافه کردن عضو تیم:', error);
-    return false;
+    console.error('خطا در مشاهده درخواست:', error);
+    bot.answerCallbackQuery(queryId, { text: '❌ خطا در دریافت اطلاعات' });
   }
 }
 
-// تابع پشتیبان‌گیری
-async function createBackup() {
+// تنظیم وضعیت درخواست
+async function handleSetStatus(chatId, queryId, data) {
+  const [, , type, id, status] = data.split('_');
+  
+  const success = await updateRequestStatus(type, id, status);
+  
+  if (success) {
+    bot.answerCallbackQuery(queryId, { 
+      text: `✅ وضعیت به ${getStatusText(status)} تغییر یافت` 
+    });
+    
+    // بازگشت به لیست درخواست‌ها
+    await handleAllRequests(chatId, queryId);
+  } else {
+    bot.answerCallbackQuery(queryId, { text: '❌ خطا در تغییر وضعیت' });
+  }
+}
+
+// مدیریت اخبار
+async function handleManageNews(chatId, queryId) {
+  const message = `
+📰 مدیریت اخبار
+
+برای مدیریت اخبار، یکی از گزینه‌های زیر را انتخاب کنید:
+  `;
+  
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '➕ اضافه کردن خبر', callback_data: 'add_news' },
+          { text: '📝 ویرایش اخبار', callback_data: 'edit_news' }
+        ],
+        [
+          { text: '🔙 بازگشت', callback_data: 'main_menu' }
+        ]
+      ]
+    }
+  };
+  
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: keyboard.reply_markup
+  });
+}
+
+// مدیریت تیم
+async function handleManageTeam(chatId, queryId) {
+  const message = `
+👥 مدیریت تیم
+
+برای مدیریت اعضای تیم، یکی از گزینه‌های زیر را انتخاب کنید:
+  `;
+  
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '➕ اضافه کردن عضو', callback_data: 'add_team' },
+          { text: '📝 ویرایش اعضا', callback_data: 'edit_team' }
+        ],
+        [
+          { text: '🔙 بازگشت', callback_data: 'main_menu' }
+        ]
+      ]
+    }
+  };
+  
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: keyboard.reply_markup
+  });
+}
+
+// ویرایش محتوا
+async function handleEditContent(chatId, queryId) {
+  const xenovaData = await readXenovaData();
+  
+  if (!xenovaData) {
+    bot.answerCallbackQuery(queryId, { text: '❌ خطا در خواندن فایل xenova.json' });
+    return;
+  }
+  
+  const message = `
+⚙️ تنظیمات xenova.json
+
+📊 اطلاعات فعلی:
+• سرمایه‌گذاری: ${xenovaData.capital_request?.amount || 'نامشخص'}
+• تیم: ${xenovaData.development_team?.total_advisors || 0} عضو
+• اخبار: ${xenovaData.news?.length || 0} خبر
+
+برای ویرایش، یکی از گزینه‌های زیر را انتخاب کنید:
+  `;
+  
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '💰 ویرایش سرمایه‌گذاری', callback_data: 'edit_investment' },
+          { text: '👥 ویرایش تیم', callback_data: 'edit_team_data' }
+        ],
+        [
+          { text: '📰 ویرایش اخبار', callback_data: 'edit_news_data' },
+          { text: '📊 ویرایش آمار', callback_data: 'edit_stats' }
+        ],
+        [
+          { text: '🔙 بازگشت', callback_data: 'main_menu' }
+        ]
+      ]
+    }
+  };
+  
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: keyboard.reply_markup
+  });
+}
+
+// پشتیبان‌گیری
+async function handleBackup(chatId, queryId) {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = path.join(process.cwd(), 'backups', `backup_${timestamp}.json`);
-    
-    // ایجاد پوشه backups اگر وجود ندارد
-    await fs.mkdir(path.join(process.cwd(), 'backups'), { recursive: true });
+    const backupPath = path.join(process.cwd(), `backup-${timestamp}.json`);
     
     const xenovaData = await readXenovaData();
     await fs.writeFile(backupPath, JSON.stringify(xenovaData, null, 2));
     
-    return backupPath;
+    bot.answerCallbackQuery(queryId, { 
+      text: `✅ پشتیبان‌گیری انجام شد: backup-${timestamp}.json` 
+    });
+    
   } catch (error) {
     console.error('خطا در پشتیبان‌گیری:', error);
-    return null;
+    bot.answerCallbackQuery(queryId, { text: '❌ خطا در پشتیبان‌گیری' });
   }
 }
 
-// دستور شروع
-bot.onText(/\/start/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  const welcomeMessage = `
-🤖 <b>ربات مدیریت زینوا</b>
+// راهنما
+async function handleHelp(chatId, queryId) {
+  const message = `
+📖 راهنمای ربات مدیریت زینوا
 
-سلام! به ربات مدیریت سایت زینوا خوش آمدید.
+🤖 امکانات اصلی:
+• 📊 آمار روزانه - مشاهده آمار بازدید و درخواست‌ها
+• 📋 درخواست‌های جدید - مشاهده درخواست‌های جدید
+• 📝 تمام درخواست‌ها - مدیریت کامل درخواست‌ها
+• ✏️ ویرایش وضعیت - تغییر وضعیت درخواست‌ها
+• 📰 مدیریت اخبار - اضافه و ویرایش اخبار
+• 👥 مدیریت تیم - مدیریت اعضای تیم
+• ⚙️ تنظیمات xenova.json - ویرایش محتوای اصلی
+• 💾 پشتیبان‌گیری - ایجاد نسخه پشتیبان
 
-📋 <b>دستورات موجود:</b>
-${Object.entries(adminCommands).map(([cmd, desc]) => `${cmd} - ${desc}`).join('\n')}
+📝 نحوه استفاده:
+• روی دکمه‌ها کلیک کنید
+• وضعیت درخواست‌ها را تغییر دهید
+• محتوای سایت را ویرایش کنید
+• از داده‌ها پشتیبان‌گیری کنید
 
-برای شروع، یکی از دستورات بالا را انتخاب کنید.
-  `;
-  
-  await bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'HTML' });
-});
-
-// دستور آمار
-bot.onText(/\/stats/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  const stats = getDailyStats();
-  if (!stats) {
-    await bot.sendMessage(chatId, '❌ خطا در دریافت آمار');
-    return;
-  }
-  
-  const statsMessage = `
-📊 <b>آمار بازدید امروز</b>
-
-👥 کل بازدید: ${stats.total_visits}
-👤 بازدیدکنندگان منحصر: ${stats.unique_visitors}
-📞 بازدید صفحه تماس: ${stats.contact_visits}
-💰 بازدید صفحه سرمایه‌گذاری: ${stats.investment_visits}
-
-📅 تاریخ: ${new Date().toLocaleDateString('fa-IR')}
-  `;
-  
-  await bot.sendMessage(chatId, statsMessage, { parse_mode: 'HTML' });
-});
-
-// دستور درخواست‌های جدید
-bot.onText(/\/requests/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  const requests = getNewRequests();
-  if (requests.length === 0) {
-    await bot.sendMessage(chatId, '✅ هیچ درخواست جدیدی وجود ندارد.');
-    return;
-  }
-  
-  let requestsMessage = `📋 <b>درخواست‌های جدید (${requests.length})</b>\n\n`;
-  
-  requests.forEach((request, index) => {
-    requestsMessage += `
-🔸 <b>درخواست ${index + 1}</b>
-👤 نام: ${request.full_name}
-📧 ایمیل: ${request.email}
-📱 تلفن: ${request.mobile_phone}
-🏢 موقعیت: ${request.company_position}
-💬 پیام: ${request.message.substring(0, 100)}...
-📅 تاریخ: ${new Date(request.created_at).toLocaleDateString('fa-IR')}
-🆔 ID: ${request.id}
-
-برای ویرایش وضعیت: /edit_request ${request.id}
-    `;
-  });
-  
-  await bot.sendMessage(chatId, requestsMessage, { parse_mode: 'HTML' });
-});
-
-// دستور ویرایش وضعیت درخواست
-bot.onText(/\/edit_request (\d+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  const requestId = match[1];
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  userStates.set(userId, {
-    action: 'edit_request_status',
-    requestId: requestId
-  });
-  
-  const statusOptions = `
-📝 <b>ویرایش وضعیت درخواست ${requestId}</b>
-
-لطفاً وضعیت جدید را انتخاب کنید:
-
-1️⃣ جدید (new)
-2️⃣ در حال بررسی (reviewing)
-3️⃣ پاسخ داده شده (responded)
-4️⃣ تکمیل شده (completed)
-5️⃣ لغو شده (cancelled)
-
-پاسخ خود را با شماره ارسال کنید.
-  `;
-  
-  await bot.sendMessage(chatId, statusOptions, { parse_mode: 'HTML' });
-});
-
-// دستور اضافه کردن خبر
-bot.onText(/\/add_news/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  userStates.set(userId, {
-    action: 'add_news',
-    step: 'title'
-  });
-  
-  await bot.sendMessage(chatId, '📰 لطفاً عنوان خبر را وارد کنید:');
-});
-
-// دستور اضافه کردن عضو تیم
-bot.onText(/\/add_team/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  userStates.set(userId, {
-    action: 'add_team',
-    step: 'name'
-  });
-  
-  await bot.sendMessage(chatId, '👤 لطفاً نام عضو تیم را وارد کنید:');
-});
-
-// دستور پشتیبان‌گیری
-bot.onText(/\/backup/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  await bot.sendMessage(chatId, '🔄 در حال ایجاد پشتیبان...');
-  
-  const backupPath = await createBackup();
-  if (backupPath) {
-    await bot.sendMessage(chatId, `✅ پشتیبان با موفقیت ایجاد شد:\n${backupPath}`);
-  } else {
-    await bot.sendMessage(chatId, '❌ خطا در ایجاد پشتیبان');
-  }
-});
-
-// دستور راهنما
-bot.onText(/\/help/, async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    await bot.sendMessage(chatId, '❌ شما دسترسی ادمین ندارید.');
-    return;
-  }
-  
-  const helpMessage = `
-📖 <b>راهنمای ربات مدیریت زینوا</b>
-
-🤖 <b>دستورات اصلی:</b>
-${Object.entries(adminCommands).map(([cmd, desc]) => `${cmd} - ${desc}`).join('\n')}
-
-📝 <b>نحوه استفاده:</b>
-• برای مشاهده آمار: /stats
-• برای درخواست‌های جدید: /requests
-• برای ویرایش وضعیت: /edit_request [ID]
-• برای اضافه کردن خبر: /add_news
-• برای اضافه کردن عضو تیم: /add_team
-
-⚠️ <b>نکات مهم:</b>
+⚠️ نکات مهم:
 • فقط ادمین‌ها می‌توانند از ربات استفاده کنند
 • تمام تغییرات در xenova.json ذخیره می‌شود
 • پشتیبان‌گیری منظم انجام دهید
   `;
   
-  await bot.sendMessage(chatId, helpMessage, { parse_mode: 'HTML' });
-});
-
-// پردازش پیام‌های متنی
-bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  const text = msg.text;
-  
-  if (!ADMIN_IDS.includes(userId)) {
-    return;
-  }
-  
-  const userState = userStates.get(userId);
-  if (!userState) return;
-  
-  try {
-    switch (userState.action) {
-      case 'edit_request_status':
-        await handleEditRequestStatus(chatId, userId, text, userState);
-        break;
-      case 'add_news':
-        await handleAddNews(chatId, userId, text, userState);
-        break;
-      case 'add_team':
-        await handleAddTeam(chatId, userId, text, userState);
-        break;
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '🔙 بازگشت', callback_data: 'main_menu' }
+        ]
+      ]
     }
-  } catch (error) {
-    console.error('خطا در پردازش پیام:', error);
-    await bot.sendMessage(chatId, '❌ خطا در پردازش درخواست');
-    userStates.delete(userId);
-  }
-});
-
-// تابع پردازش ویرایش وضعیت درخواست
-async function handleEditRequestStatus(chatId, userId, text, userState) {
-  const statusMap = {
-    '1': 'new',
-    '2': 'reviewing', 
-    '3': 'responded',
-    '4': 'completed',
-    '5': 'cancelled'
   };
   
-  const status = statusMap[text];
-  if (!status) {
-    await bot.sendMessage(chatId, '❌ لطفاً عدد 1 تا 5 را وارد کنید.');
-    return;
-  }
-  
-  const success = updateRequestStatus(userState.requestId, status);
-  if (success) {
-    await bot.sendMessage(chatId, `✅ وضعیت درخواست ${userState.requestId} به "${status}" تغییر یافت.`);
-    
-    // اطلاع‌رسانی به کانال
-    await sendToAdminChannel(`
-🔄 <b>تغییر وضعیت درخواست</b>
-
-🆔 درخواست: ${userState.requestId}
-📊 وضعیت جدید: ${status}
-👤 ادمین: ${userId}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-    `);
-  } else {
-    await bot.sendMessage(chatId, '❌ خطا در تغییر وضعیت');
-  }
-  
-  userStates.delete(userId);
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: keyboard.reply_markup
+  });
 }
 
-// تابع پردازش اضافه کردن خبر
-async function handleAddNews(chatId, userId, text, userState) {
-  switch (userState.step) {
-    case 'title':
-      userState.newsData = { title: text };
-      userState.step = 'content';
-      await bot.sendMessage(chatId, '📝 لطفاً محتوای خبر را وارد کنید:');
-      break;
-      
-    case 'content':
-      userState.newsData.content = text;
-      userState.step = 'summary';
-      await bot.sendMessage(chatId, '📋 لطفاً خلاصه خبر را وارد کنید:');
-      break;
-      
-    case 'summary':
-      userState.newsData.summary = text;
-      userState.step = 'author';
-      await bot.sendMessage(chatId, '✍️ لطفاً نام نویسنده را وارد کنید:');
-      break;
-      
-    case 'author':
-      userState.newsData.author = text;
-      userState.step = 'image_url';
-      await bot.sendMessage(chatId, '🖼️ لطفاً آدرس تصویر را وارد کنید (اختیاری):');
-      break;
-      
-    case 'image_url':
-      userState.newsData.image_url = text || '';
-      
-      const success = await addNews(userState.newsData);
-      if (success) {
-        await bot.sendMessage(chatId, '✅ خبر با موفقیت اضافه شد!');
-        
-        // اطلاع‌رسانی به کانال
-        await sendToAdminChannel(`
-📰 <b>خبر جدید اضافه شد</b>
-
-📝 عنوان: ${userState.newsData.title}
-✍️ نویسنده: ${userState.newsData.author}
-👤 ادمین: ${userId}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-        `);
-      } else {
-        await bot.sendMessage(chatId, '❌ خطا در اضافه کردن خبر');
-      }
-      
-      userStates.delete(userId);
-      break;
-  }
-}
-
-// تابع پردازش اضافه کردن عضو تیم
-async function handleAddTeam(chatId, userId, text, userState) {
-  switch (userState.step) {
-    case 'name':
-      userState.memberData = { name: text };
-      userState.step = 'role';
-      await bot.sendMessage(chatId, '💼 لطفاً نقش عضو تیم را وارد کنید:');
-      break;
-      
-    case 'role':
-      userState.memberData.role = text;
-      userState.step = 'skills';
-      await bot.sendMessage(chatId, '🛠️ لطفاً مهارت‌ها را با کاما جدا کنید:');
-      break;
-      
-    case 'skills':
-      userState.memberData.skills = text.split(',').map(s => s.trim());
-      userState.step = 'experience';
-      await bot.sendMessage(chatId, '📚 لطفاً تجربیات را وارد کنید:');
-      break;
-      
-    case 'experience':
-      userState.memberData.experience = text;
-      userState.step = 'photo';
-      await bot.sendMessage(chatId, '🖼️ لطفاً آدرس عکس را وارد کنید (اختیاری):');
-      break;
-      
-    case 'photo':
-      userState.memberData.photo = text || '';
-      
-      const success = await addTeamMember(userState.memberData);
-      if (success) {
-        await bot.sendMessage(chatId, '✅ عضو تیم با موفقیت اضافه شد!');
-        
-        // اطلاع‌رسانی به کانال
-        await sendToAdminChannel(`
-👥 <b>عضو جدید تیم اضافه شد</b>
-
-👤 نام: ${userState.memberData.name}
-💼 نقش: ${userState.memberData.role}
-🛠️ مهارت‌ها: ${userState.memberData.skills.join(', ')}
-👨‍💼 ادمین: ${userId}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-        `);
-      } else {
-        await bot.sendMessage(chatId, '❌ خطا در اضافه کردن عضو تیم');
-      }
-      
-      userStates.delete(userId);
-      break;
-  }
-}
-
-// تابع اطلاع‌رسانی فرم جدید
-async function notifyNewForm(formData, formType) {
+// بازگشت به منوی اصلی
+async function handleMainMenu(chatId, queryId) {
   const message = `
-📝 <b>فرم جدید دریافت شد</b>
+🤖 ربات مدیریت زینوا
 
-📋 نوع: ${formType === 'contact' ? 'تماس' : 'سرمایه‌گذاری'}
+برای شروع، یکی از گزینه‌های زیر را انتخاب کنید:
+  `;
+  
+  bot.editMessageText(message, {
+    chat_id: chatId,
+    message_id: queryId,
+    reply_markup: getMainKeyboard().reply_markup
+  });
+}
+
+// سایر توابع placeholder
+async function handleEditStatus(chatId, queryId) {
+  await handleAllRequests(chatId, queryId);
+}
+
+// اطلاع‌رسانی فرم جدید
+async function notifyNewForm(formData, type) {
+  try {
+    const message = `
+📋 درخواست جدید ${type === 'contact' ? 'تماس' : 'سرمایه‌گذاری'}
+
 👤 نام: ${formData.full_name}
 📧 ایمیل: ${formData.email}
-📱 تلفن: ${formData.mobile_phone}
 🏢 موقعیت: ${formData.company_position || 'نامشخص'}
-💬 پیام: ${formData.message.substring(0, 200)}...
-💰 مبلغ سرمایه‌گذاری: ${formData.investment_amount_range || 'نامشخص'}
+📱 تلفن: ${formData.mobile_phone || 'نامشخص'}
+💬 پیام: ${formData.message || 'نامشخص'}
 📅 تاریخ: ${new Date().toLocaleString('fa-IR')}
-  `;
-  
-  await sendToAdminChannel(message);
+    `;
+    
+    await bot.sendMessage(ADMIN_CHANNEL, message);
+  } catch (error) {
+    console.error('خطا در اطلاع‌رسانی فرم:', error);
+  }
 }
 
-// تابع اطلاع‌رسانی بازدید جدید
+// اطلاع‌رسانی بازدید جدید
 async function notifyNewVisit(visitData) {
-  const message = `
-👁️ <b>بازدید جدید</b>
+  try {
+    const message = `
+👁️ بازدید جدید
 
-🌐 صفحه: ${visitData.page_type}
-📱 دستگاه: ${visitData.user_agent.includes('Mobile') ? 'موبایل' : 'دسکتاپ'}
-🌍 IP: ${visitData.ip_address}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-  `;
-  
-  await sendToAdminChannel(message);
+📄 صفحه: ${visitData.page_type}
+🌐 IP: ${visitData.ip_address || 'نامشخص'}
+📅 تاریخ: ${new Date().toLocaleString('fa-IR')}
+    `;
+    
+    await bot.sendMessage(ADMIN_CHANNEL, message);
+  } catch (error) {
+    console.error('خطا در اطلاع‌رسانی بازدید:', error);
+  }
 }
 
-// راه‌اندازی ربات
-console.log('🤖 ربات تلگرام زینوا در حال راه‌اندازی...');
+// ارسال پیام به کانال ادمین
+async function sendToAdminChannel(message) {
+  try {
+    await bot.sendMessage(ADMIN_CHANNEL, message);
+  } catch (error) {
+    console.error('خطا در ارسال پیام به کانال:', error);
+  }
+}
 
-// مدیریت خطاها
-bot.on('error', (error) => {
-  console.error('خطا در ربات تلگرام:', error);
-});
-
-bot.on('polling_error', (error) => {
-  console.error('خطا در polling ربات:', error);
-});
+console.log('🤖 ربات تلگرام زینوا فعال است');
 
 module.exports = {
   bot,
