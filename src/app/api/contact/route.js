@@ -107,6 +107,23 @@ export async function POST(request) {
     );
     db.close();
 
+    // اطلاع‌رسانی به ربات تلگرام
+    try {
+      const { notifyNewForm } = await import('../../../bot/telegram-bot.js');
+      await notifyNewForm({
+        full_name,
+        email,
+        company_position,
+        mobile_phone,
+        message,
+        investment_amount_range: null,
+        investment_type: null,
+        contact_preference
+      }, 'investment');
+    } catch (botError) {
+      console.error('خطا در اطلاع‌رسانی ربات:', botError);
+    }
+
     return NextResponse.json({ 
       success: true, 
       message: 'درخواست اطلاعات سرمایه‌گذاری شما با موفقیت ثبت شد. کد پیگیری شما: ' + trackingCode,
