@@ -1,0 +1,507 @@
+@import "tailwindcss";
+@import "vazirmatn/Vazirmatn-font-face.css";
+@import "@fortawesome/fontawesome-free/css/all.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* Custom theme variables */
+:root {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Vazirmatn", var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Vazirmatn", Arial, Helvetica, sans-serif;
+  direction: rtl;
+}
+
+/* رنگ‌های جذاب برای سرمایه‌گذاری */
+.bg-primary-50 { background-color: #f0fdf4 !important; }
+.bg-primary-100 { background-color: #dcfce7 !important; }
+.bg-primary-200 { background-color: #bbf7d0 !important; }
+.bg-primary-300 { background-color: #86efac !important; }
+.bg-primary-400 { background-color: #4ade80 !important; }
+.bg-primary-500 { background-color: #22c55e !important; }
+.bg-primary-600 { background-color: #16a34a !important; }
+.bg-primary-700 { background-color: #15803d !important; }
+.bg-primary-800 { background-color: #166534 !important; }
+.bg-primary-900 { background-color: #14532d !important; }
+
+.text-primary-50 { color: #f0fdf4 !important; }
+.text-primary-100 { color: #dcfce7 !important; }
+.text-primary-200 { color: #bbf7d0 !important; }
+.text-primary-300 { color: #86efac !important; }
+.text-primary-400 { color: #4ade80 !important; }
+.text-primary-500 { color: #22c55e !important; }
+.text-primary-600 { color: #16a34a !important; }
+.text-primary-700 { color: #15803d !important; }
+.text-primary-800 { color: #166534 !important; }
+.text-primary-900 { color: #14532d !important; }
+
+.border-primary-200 { border-color: #bbf7d0 !important; }
+.border-primary-500 { border-color: #22c55e !important; }
+
+/* رنگ‌های gradient */
+.from-primary-50 { --tw-gradient-from: #f0fdf4 !important; }
+.to-primary-100 { --tw-gradient-to: #dcfce7 !important; }
+.from-primary-600 { --tw-gradient-from: #16a34a !important; }
+.to-primary-800 { --tw-gradient-to: #166534 !important; }
+
+/* رنگ‌های اضافی برای سرمایه‌گذاری */
+.bg-gradient-investment { 
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%) !important; 
+}
+.bg-gradient-gold { 
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%) !important; 
+}
+.bg-gradient-blue { 
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 50%, #1e3a8a 100%) !important; 
+}
+
+/* hover states */
+.hover\:bg-primary-700:hover { background-color: #15803d !important; }
+.hover\:bg-primary-800:hover { background-color: #166534 !important; }
+.hover\:text-primary-600:hover { color: #16a34a !important; }
+.hover\:text-primary-700:hover { color: #15803d !important; }
+
+/* رنگ‌های اضافی برای جدول */
+.bg-green-25 { background-color: #f7fef7 !important; }
+.bg-blue-25 { background-color: #f0f8ff !important; }
+.bg-purple-25 { background-color: #faf5ff !important; }
+.bg-yellow-25 { background-color: #fffef0 !important; }
+
+/* رنگ‌های متن برای جدول */
+.text-green-700 { color: #15803d !important; }
+.text-blue-700 { color: #1d4ed8 !important; }
+.text-purple-700 { color: #7c3aed !important; }
+.text-yellow-700 { color: #a16207 !important; }
+
+.text-green-600 { color: #16a34a !important; }
+.text-blue-600 { color: #2563eb !important; }
+.text-purple-600 { color: #9333ea !important; }
+.text-yellow-600 { color: #ca8a04 !important; }
+
+/* Carousel Background Animations */
+@keyframes neural-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes molecular-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(120deg); }
+  66% { transform: translateY(10px) rotate(240deg); }
+}
+
+@keyframes brain-wave {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes data-stream {
+  0% { transform: translateY(100%) rotate(0deg); }
+  100% { transform: translateY(-100%) rotate(360deg); }
+}
+
+.animated-bg {
+  position: relative;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%);
+  overflow: hidden;
+}
+
+.animated-bg::before,
+.animated-bg::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+
+/* Neural Network Animation - Enhanced */
+.neural-network::before {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.7) 0%, rgba(74, 222, 128, 0.4) 40%, transparent 70%);
+  top: 10%;
+  left: 5%;
+  animation: neural-pulse 2.5s ease-in-out infinite;
+  box-shadow: 
+    0 0 60px rgba(34, 197, 94, 0.5),
+    inset 0 0 40px rgba(74, 222, 128, 0.3);
+}
+
+.neural-network::after {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.6) 0%, rgba(34, 197, 94, 0.3) 50%, transparent 70%);
+  bottom: 15%;
+  right: 10%;
+  animation: neural-pulse 2.5s ease-in-out infinite 1.2s;
+  box-shadow: 
+    0 0 50px rgba(74, 222, 128, 0.4),
+    inset 0 0 30px rgba(34, 197, 94, 0.2);
+}
+
+/* Molecular Flow Animation - Enhanced */
+.molecular-flow::before {
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.8) 0%, rgba(245, 158, 11, 0.5) 50%, transparent 70%);
+  top: 15%;
+  right: 15%;
+  animation: molecular-float 3s ease-in-out infinite;
+  box-shadow: 
+    0 0 40px rgba(251, 191, 36, 0.6),
+    inset 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.molecular-flow::after {
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.7) 0%, rgba(74, 222, 128, 0.4) 50%, transparent 70%);
+  bottom: 20%;
+  left: 20%;
+  animation: molecular-float 3s ease-in-out infinite 1.5s;
+  box-shadow: 
+    0 0 35px rgba(34, 197, 94, 0.5),
+    inset 0 0 15px rgba(74, 222, 128, 0.2);
+}
+
+/* Brain Network Animation - Enhanced */
+.brain-network::before {
+  width: 400px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent 0%, rgba(74, 222, 128, 0.9) 30%, rgba(34, 197, 94, 0.8) 50%, rgba(74, 222, 128, 0.9) 70%, transparent 100%);
+  top: 25%;
+  left: 0;
+  animation: brain-wave 1.8s linear infinite;
+  box-shadow: 
+    0 0 20px rgba(74, 222, 128, 0.6),
+    0 2px 10px rgba(34, 197, 94, 0.4);
+  border-radius: 2px;
+}
+
+.brain-network::after {
+  width: 350px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, rgba(251, 191, 36, 0.8) 30%, rgba(245, 158, 11, 0.7) 50%, rgba(251, 191, 36, 0.8) 70%, transparent 100%);
+  bottom: 35%;
+  left: 0;
+  animation: brain-wave 2.2s linear infinite 1s;
+  box-shadow: 
+    0 0 15px rgba(251, 191, 36, 0.5),
+    0 2px 8px rgba(245, 158, 11, 0.3);
+  border-radius: 2px;
+}
+
+/* Data Flow Animation - Enhanced */
+.data-flow::before {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.9) 0%, rgba(74, 222, 128, 0.6) 50%, transparent 70%);
+  left: 15%;
+  animation: data-stream 2.5s linear infinite;
+  box-shadow: 
+    0 0 25px rgba(34, 197, 94, 0.7),
+    inset 0 0 15px rgba(74, 222, 128, 0.4);
+  border-radius: 50%;
+}
+
+.data-flow::after {
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.8) 0%, rgba(245, 158, 11, 0.5) 50%, transparent 70%);
+  right: 20%;
+  animation: data-stream 2s linear infinite 1s;
+  box-shadow: 
+    0 0 20px rgba(251, 191, 36, 0.6),
+    inset 0 0 10px rgba(245, 158, 11, 0.3);
+  border-radius: 50%;
+}
+
+/* Additional floating elements for neural networks */
+.neural-network {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%);
+}
+
+.neural-network::before {
+  box-shadow: 
+    0 0 20px rgba(34, 197, 94, 0.3),
+    inset 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.molecular-flow {
+  background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+}
+
+.brain-network {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #134e4a 100%);
+}
+
+.data-flow {
+  background: linear-gradient(135deg, #16a34a 0%, #059669 50%, #047857 100%);
+}
+
+/* Smooth transitions for carousel */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideInRight 0.8s ease-out;
+}
+
+/* Enhanced neural network patterns */
+.neural-network {
+  position: relative;
+}
+
+.neural-network::before,
+.neural-network::after {
+  border-radius: 50%;
+}
+
+/* Add more neural connection lines */
+.brain-network::before,
+.brain-network::after {
+  border-radius: 0;
+}
+
+/* Floating particles for molecular animation */
+.molecular-flow {
+  position: relative;
+}
+
+.molecular-flow::before,
+.molecular-flow::after {
+  border-radius: 50%;
+}
+
+/* Additional animated elements for each background */
+
+/* Neural Network - Add connection lines */
+.neural-network {
+  position: relative;
+  overflow: hidden;
+}
+
+.neural-network::before,
+.neural-network::after {
+  z-index: 1;
+}
+
+/* Molecular Flow - Add floating particles */
+.molecular-flow {
+  position: relative;
+  overflow: hidden;
+}
+
+.molecular-flow::before,
+.molecular-flow::after {
+  z-index: 1;
+}
+
+/* Brain Network - Add synaptic connections */
+.brain-network {
+  position: relative;
+  overflow: hidden;
+}
+
+.brain-network::before,
+.brain-network::after {
+  z-index: 1;
+}
+
+/* Data Flow - Add streaming particles */
+.data-flow {
+  position: relative;
+  overflow: hidden;
+}
+
+.data-flow::before,
+.data-flow::after {
+  z-index: 1;
+}
+
+/* Additional elements for each animation type */
+
+/* Neural Network - Add more connection nodes */
+.neural-network {
+  position: relative;
+  overflow: hidden;
+}
+
+.neural-network::before {
+  z-index: 1;
+}
+
+.neural-network::after {
+  z-index: 1;
+}
+
+/* Add third and fourth neural nodes using pseudo-elements on child divs */
+.animated-bg.neural-network {
+  background: 
+    radial-gradient(circle at 70% 20%, rgba(34, 197, 94, 0.3) 0%, transparent 30%),
+    radial-gradient(circle at 30% 80%, rgba(74, 222, 128, 0.2) 0%, transparent 25%),
+    radial-gradient(circle at 85% 70%, rgba(16, 185, 129, 0.25) 0%, transparent 20%),
+    linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%);
+  animation: neural-bg-pulse 4s ease-in-out infinite;
+}
+
+@keyframes neural-bg-pulse {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50% { filter: brightness(1.1) saturate(1.2); }
+}
+
+/* Enhanced keyframes for more visible movement */
+@keyframes neural-pulse {
+  0%, 100% { 
+    opacity: 0.4; 
+    transform: scale(1); 
+    filter: blur(0px);
+  }
+  50% { 
+    opacity: 1; 
+    transform: scale(1.2); 
+    filter: blur(1px);
+  }
+}
+
+/* Molecular Flow - Add more floating particles */
+.animated-bg.molecular-flow {
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.4) 0%, transparent 15%),
+    radial-gradient(circle at 80% 60%, rgba(245, 158, 11, 0.3) 0%, transparent 12%),
+    radial-gradient(circle at 40% 85%, rgba(34, 197, 94, 0.35) 0%, transparent 18%),
+    radial-gradient(circle at 75% 15%, rgba(74, 222, 128, 0.25) 0%, transparent 10%),
+    radial-gradient(circle at 15% 70%, rgba(16, 185, 129, 0.3) 0%, transparent 14%),
+    linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+  animation: molecular-bg-float 5s ease-in-out infinite;
+}
+
+@keyframes molecular-bg-float {
+  0%, 100% { 
+    filter: brightness(1) saturate(1) hue-rotate(0deg); 
+    transform: scale(1);
+  }
+  33% { 
+    filter: brightness(1.15) saturate(1.3) hue-rotate(5deg); 
+    transform: scale(1.02);
+  }
+  66% { 
+    filter: brightness(0.95) saturate(0.9) hue-rotate(-3deg); 
+    transform: scale(0.98);
+  }
+}
+
+@keyframes molecular-float {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg) scale(1); 
+    opacity: 0.6;
+  }
+  33% { 
+    transform: translateY(-20px) rotate(120deg) scale(1.1); 
+    opacity: 0.9;
+  }
+  66% { 
+    transform: translateY(20px) rotate(240deg) scale(0.9); 
+    opacity: 0.7;
+  }
+}
+
+/* Brain Network - Add more neural pathways */
+.animated-bg.brain-network {
+  background: 
+    linear-gradient(45deg, rgba(74, 222, 128, 0.1) 0%, transparent 20%),
+    linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, transparent 25%),
+    linear-gradient(-45deg, rgba(251, 191, 36, 0.08) 0%, transparent 15%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, transparent 30%),
+    radial-gradient(circle at 25% 25%, rgba(74, 222, 128, 0.2) 0%, transparent 20%),
+    radial-gradient(circle at 75% 75%, rgba(34, 197, 94, 0.15) 0%, transparent 25%),
+    linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #134e4a 100%);
+  animation: brain-network-pulse 3s ease-in-out infinite;
+}
+
+@keyframes brain-network-pulse {
+  0%, 100% { 
+    filter: brightness(1) contrast(1); 
+    transform: scale(1);
+  }
+  50% { 
+    filter: brightness(1.2) contrast(1.1); 
+    transform: scale(1.01);
+  }
+}
+
+/* Data Flow - Add more data streams */
+.animated-bg.data-flow {
+  background: 
+    linear-gradient(0deg, rgba(34, 197, 94, 0.1) 0%, transparent 40%),
+    linear-gradient(90deg, rgba(251, 191, 36, 0.08) 0%, transparent 30%),
+    linear-gradient(180deg, rgba(74, 222, 128, 0.12) 0%, transparent 35%),
+    linear-gradient(270deg, rgba(16, 185, 129, 0.1) 0%, transparent 25%),
+    radial-gradient(circle at 30% 20%, rgba(34, 197, 94, 0.2) 0%, transparent 15%),
+    radial-gradient(circle at 70% 80%, rgba(251, 191, 36, 0.15) 0%, transparent 12%),
+    radial-gradient(circle at 20% 60%, rgba(74, 222, 128, 0.18) 0%, transparent 18%),
+    linear-gradient(135deg, #16a34a 0%, #059669 50%, #047857 100%);
+  animation: data-flow-stream 4s linear infinite;
+}
+
+@keyframes data-flow-stream {
+  0% { 
+    filter: brightness(1) saturate(1); 
+    transform: translateY(0px);
+  }
+  25% { 
+    filter: brightness(1.1) saturate(1.2); 
+    transform: translateY(-2px);
+  }
+  50% { 
+    filter: brightness(0.95) saturate(0.9); 
+    transform: translateY(0px);
+  }
+  75% { 
+    filter: brightness(1.05) saturate(1.1); 
+    transform: translateY(2px);
+  }
+  100% { 
+    filter: brightness(1) saturate(1); 
+    transform: translateY(0px);
+  }
+}
