@@ -9,6 +9,8 @@ export default function Contact() {
     company_position: '',
     mobile_phone: '',
     message: '',
+    investment_amount_range: '',
+    investment_type: '',
     contact_preference: 'phone'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +52,8 @@ export default function Contact() {
           company_position: '',
           mobile_phone: '',
           message: '',
+          investment_amount_range: '',
+          investment_type: '',
           contact_preference: 'phone'
         });
       } else {
