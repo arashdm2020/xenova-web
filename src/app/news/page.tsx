@@ -3,30 +3,30 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-// تعریف نوع داده‌ها برای JavaScript
-const NewsItem = {
-  id: 0,
-  news_code: '',
-  title: '',
-  summary: '',
-  author: '',
-  published_at: '',
-  image_url: ''
-};
+// تعریف interface برای نوع داده‌های خبر
+interface NewsItem {
+  id: number;
+  news_code: string;
+  title: string;
+  summary: string;
+  author: string;
+  published_at: string;
+  image_url?: string;
+}
 
-const NewsResponse = {
-  success: false,
-  data: [],
-  pagination: {
-    total: 0,
-    limit: 0,
-    offset: 0,
-    hasMore: false
-  }
-};
+interface NewsResponse {
+  success: boolean;
+  data: NewsItem[];
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
 
 export default function NewsPage() {
-  const [news, setNews] = useState([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
@@ -67,7 +67,7 @@ export default function NewsPage() {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fa-IR', {
       year: 'numeric',
       month: 'long',
@@ -75,7 +75,7 @@ export default function NewsPage() {
     });
   };
 
-  const formatTime = (dateString) => {
+  const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('fa-IR', {
       hour: '2-digit',
       minute: '2-digit'
