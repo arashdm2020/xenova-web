@@ -229,7 +229,7 @@ export default function ChatAgent({ isEmbedded = false }) {
 
       {/* Input Area */}
       <div className="border-t border-gray-200 p-4 bg-white rounded-b-xl">
-        <div className="flex items-center gap-6"> {/* افزایش فاصله به 24px */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-6">
           <div className="flex-1">
             <textarea
               ref={inputRef}
@@ -238,15 +238,15 @@ export default function ChatAgent({ isEmbedded = false }) {
               onKeyPress={handleKeyPress}
               placeholder="سوال خود را درباره زینوا بپرسید..."
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-sm text-gray-800"
-              rows={1}
-              style={{ minHeight: '44px', maxHeight: '120px' }}
+              rows={2}
+              style={{ minHeight: '60px', maxHeight: '120px' }}
               disabled={isLoading}
             />
           </div>
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center h-[44px] mr-4 ${
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center h-[60px] md:h-[44px] w-full md:w-auto ${
               !inputMessage.trim() || isLoading
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gray-900 text-white hover:bg-gray-800 shadow-lg hover:shadow-xl'
@@ -275,7 +275,7 @@ export default function ChatAgent({ isEmbedded = false }) {
             <button
               key={index}
               onClick={() => setInputMessage(question)}
-              className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors duration-200 border border-gray-200"
+              className="px-3 py-2 md:py-1 text-xs md:text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors duration-200 border border-gray-200"
               disabled={isLoading}
             >
               {question}
