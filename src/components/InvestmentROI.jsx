@@ -50,15 +50,15 @@ export default function InvestmentROI() {
         </div>
 
         {/* درخواست سرمایه */}
-        <div className="bg-white rounded-3xl shadow-2xl p-12 mb-16">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-4 md:p-8 lg:p-12 mb-8 md:mb-16">
+          <div className="text-center mb-6 md:mb-12">
+            <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
               {data.capital_request.title}
             </h3>
-            <div className="text-6xl font-bold text-emerald-600 mb-4">
+            <div className="text-2xl md:text-4xl lg:text-6xl font-bold text-emerald-600 mb-4 break-words">
               {data.capital_request.amount}
             </div>
-            <p className="text-xl text-gray-600 mb-6">
+            <p className="text-base md:text-lg lg:text-xl text-gray-600 mb-4 md:mb-6">
               مدت زمان: {data.capital_request.duration}
             </p>
             <p className="text-gray-600 max-w-2xl mx-auto">
@@ -87,9 +87,9 @@ export default function InvestmentROI() {
         </div>
 
         {/* پیش‌بینی درآمد */}
-        <div className="bg-white rounded-3xl shadow-2xl p-12 mb-16">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-4 md:p-8 lg:p-12 mb-8 md:mb-16">
+          <div className="text-center mb-6 md:mb-12">
+            <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
               پیش‌بینی درآمد
             </h3>
             <p className="text-gray-600">
